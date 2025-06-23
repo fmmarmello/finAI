@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -57,7 +57,9 @@ const formSchema = z.object({
 type AddTransactionSheetProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddTransaction: (transaction: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score"> & { ai_confidence_score?: number }) => void;
+  onAddTransaction: (transaction: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score">) => void;
+  onUpdateTransaction: (transaction: Transaction) => void;
+  transactionToEdit: Transaction | null;
 };
 
 const categories = [
@@ -72,7 +74,7 @@ const categories = [
   "Outros",
 ];
 
-export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction }: AddTransactionSheetProps) {
+export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, onUpdateTransaction, transactionToEdit }: AddTransactionSheetProps) {
   const [isCategorizing, setIsCategorizing] = useState(false);
   const { toast } = useToast();
 
@@ -87,45 +89,80 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction }: 
     },
   });
 
-  async function handleDescriptionBlur(description: string) {
-    if (description.length < 3) return;
-    setIsCategorizing(true);
-    const result = await runCategorizeTransaction(description);
-    if (result.data) {
-      const categoryExists = categories.some(c => c.toLowerCase() === result.data.category.toLowerCase());
-      if (categoryExists) {
-        form.setValue("category", result.data.category);
-      } else {
-        form.setValue("category", "Outros");
-      }
+  useEffect(() => {
+    if (transactionToEdit) {
+      const [year, month, day] = transactionToEdit.date.split('-').map(Number);
+      form.reset({
+        ...transactionToEdit,
+        date: new Date(year, month - 1, day),
+      });
     } else {
+      form.reset({
+        description: "",
+        amount: 0,
+        date: new Date(),
+        type: "despesa",
+        category: "",
+      });
+    }
+  }, [transactionToEdit, form, isOpen]);
+
+
+  async function handleDescriptionBlur(description: string) {
+    if (description.length < 3 || transactionToEdit) return; // Do not categorize on edit
+    setIsCategorizing(true);
+    try {
+      const result = await runCategorizeTransaction(description);
+      if (result.data) {
+        const categoryMatch = categories.find(c => c.toLowerCase() === result.data.category.toLowerCase());
+        if (categoryMatch) {
+          form.setValue("category", categoryMatch);
+        } else {
+          form.setValue("category", "Outros");
+        }
+      }
+    } catch(e) {
       toast({
         variant: "destructive",
         title: "Erro na categorização",
         description: "Não foi possível sugerir uma categoria.",
       });
+    } finally {
+      setIsCategorizing(false);
     }
-    setIsCategorizing(false);
   }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    const transactionData = {
-      ...values,
-      date: format(values.date, "yyyy-MM-dd"),
-    };
-    onAddTransaction(transactionData);
-    form.reset();
-    onOpenChange(false);
+    if (transactionToEdit) {
+      const updatedTransaction: Transaction = {
+        ...transactionToEdit,
+        description: values.description,
+        amount: values.amount,
+        date: format(values.date, "yyyy-MM-dd"),
+        type: values.type,
+        category: values.category,
+      };
+      onUpdateTransaction(updatedTransaction);
+    } else {
+      const transactionData = {
+        ...values,
+        date: format(values.date, "yyyy-MM-dd"),
+      };
+      onAddTransaction(transactionData);
+    }
   }
+
+  const isEditMode = !!transactionToEdit;
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
       <SheetContent>
         <SheetHeader>
-          <SheetTitle>Adicionar Transação</SheetTitle>
+          <SheetTitle>{isEditMode ? 'Editar Transação' : 'Adicionar Transação'}</SheetTitle>
           <SheetDescription>
-            Adicione uma nova despesa ou receita. A categoria será sugerida
-            automaticamente.
+            {isEditMode 
+              ? 'Atualize os detalhes da sua transação.'
+              : 'Adicione uma nova despesa ou receita. A categoria será sugerida automaticamente.'}
           </SheetDescription>
         </SheetHeader>
         <Form {...form}>
@@ -162,7 +199,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction }: 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tipo</FormLabel>
-                   <Select onValueChange={field.onChange} defaultValue={field.value}>
+                   <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o tipo" />
@@ -219,7 +256,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction }: 
                           )}
                         >
                           {field.value ? (
-                            format(field.value, "PPP")
+                            format(field.value, "PPP", {})
                           ) : (
                             <span>Escolha uma data</span>
                           )}
@@ -243,7 +280,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction }: 
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">Adicionar Transação</Button>
+            <Button type="submit" className="w-full">{isEditMode ? 'Salvar Alterações' : 'Adicionar Transação'}</Button>
           </form>
         </Form>
       </SheetContent>

@@ -27,10 +27,10 @@ const AnalyzeSpendingInputSchema = z.object({
 export type AnalyzeSpendingInput = z.infer<typeof AnalyzeSpendingInputSchema>;
 
 const AnalyzeSpendingOutputSchema = z.object({
-  trendAnalysis: z.string().describe('Analysis of spending trends over time.'),
-  anomalyDetection: z.string().describe('Identified anomalies in spending patterns.'),
-  recurringSubscriptions: z.string().describe('List of identified recurring subscriptions and their total monthly cost.'),
-  spendingSummary: z.string().describe('Overall summary of spending habits.'),
+  trendAnalysis: z.string().describe('Análise das tendências de gastos ao longo do tempo.'),
+  anomalyDetection: z.string().describe('Anomalias identificadas nos padrões de gastos.'),
+  recurringSubscriptions: z.string().describe('Lista de assinaturas recorrentes identificadas e seu custo mensal total.'),
+  spendingSummary: z.string().describe('Resumo geral dos hábitos de consumo.'),
 });
 export type AnalyzeSpendingOutput = z.infer<typeof AnalyzeSpendingOutputSchema>;
 
@@ -42,22 +42,22 @@ const analyzeSpendingPrompt = ai.definePrompt({
   name: 'analyzeSpendingPrompt',
   input: {schema: AnalyzeSpendingInputSchema},
   output: {schema: AnalyzeSpendingOutputSchema},
-  prompt: `You are a personal finance advisor analyzing spending habits to provide insights.
+  prompt: `Você é um consultor financeiro pessoal que analisa hábitos de consumo para fornecer insights.
 
-  Analyze the following transactions and provide insights on spending trends, anomalies, and recurring subscriptions.
+  Analise as seguintes transações e forneça insights sobre tendências de gastos, anomalias e assinaturas recorrentes.
 
-  Transactions:
+  Transações:
   {{#each transactions}}
-  - Date: {{date}}, Description: {{description}}, Amount: {{amount}} {{../currency}}, Category: {{category}}, Type: {{type}}
+  - Data: {{date}}, Descrição: {{description}}, Valor: {{amount}} {{../currency}}, Categoria: {{category}}, Tipo: {{type}}
   {{/each}}
 
-  Provide the following insights:
-  - Trend Analysis: Analyze spending trends over time (e.g., increased spending in a specific category).
-  - Anomaly Detection: Identify any unusual or unexpected transactions.
-  - Recurring Subscriptions: List any recurring subscriptions and their total monthly cost.
-  - Spending Summary: Give an overall summary of the spending habits.
+  Forneça os seguintes insights em português do Brasil:
+  - Análise de Tendências (trendAnalysis): Analise as tendências de gastos ao longo do tempo (por exemplo, aumento de gastos em uma categoria específica).
+  - Detecção de Anomalias (anomalyDetection): Identifique transações incomuns ou inesperadas.
+  - Assinaturas Recorrentes (recurringSubscriptions): Liste as assinaturas recorrentes e seu custo mensal total.
+  - Resumo de Gastos (spendingSummary): Forneça um resumo geral dos hábitos de consumo.
 
-  Format the response as a JSON object.
+  Formate a resposta como um objeto JSON.
   `,
 });
 

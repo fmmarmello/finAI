@@ -31,30 +31,58 @@ export function Dashboard() {
   const [insights, setInsights] = useState<AnalyzeSpendingOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     async function analyze() {
-      if(transactions.length > 0) {
+      if(transactions.length > 3) {
         setIsAnalyzing(true);
-        const result = await runAnalyzeSpending(transactions);
-        if (result.data) {
-          setInsights(result.data);
-        } else {
+        try {
+          const result = await runAnalyzeSpending(transactions);
+          if (result.data) {
+            setInsights(result.data);
+          } else {
+             toast({
+              variant: "destructive",
+              title: "Erro na Análise",
+              description: result.error,
+            });
+          }
+        } catch(e) {
            toast({
-            variant: "destructive",
-            title: "Erro na Análise",
-            description: result.error,
-          });
+              variant: "destructive",
+              title: "Erro na Análise",
+              description: "Não foi possível gerar os insights.",
+            });
+        } finally {
+          setIsAnalyzing(false);
         }
-        setIsAnalyzing(false);
+      } else {
+        setInsights(null);
       }
     }
     analyze();
   }, [transactions, toast]);
+  
+  useEffect(() => {
+    if (!isSheetOpen) {
+      setTransactionToEdit(null);
+    }
+  }, [isSheetOpen]);
 
-  const handleAddTransaction = (newTransactionData: Omit<Transaction, "id" | "source" | "status">) => {
+  const handleOpenAddSheet = () => {
+    setTransactionToEdit(null);
+    setIsSheetOpen(true);
+  };
+
+  const handleOpenEditSheet = (transaction: Transaction) => {
+    setTransactionToEdit(transaction);
+    setIsSheetOpen(true);
+  };
+
+  const handleAddTransaction = (newTransactionData: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score">) => {
     const newTransaction: Transaction = {
       ...newTransactionData,
       id: new Date().getTime().toString(),
@@ -66,6 +94,18 @@ export function Dashboard() {
       title: "Transação Adicionada",
       description: `"${newTransaction.description}" foi adicionada com sucesso.`,
     });
+    setIsSheetOpen(false);
+  };
+  
+  const handleUpdateTransaction = (updatedTransaction: Transaction) => {
+    setTransactions(prev =>
+      prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t))
+    );
+    toast({
+      title: "Transação Atualizada",
+      description: `"${updatedTransaction.description}" foi atualizada com sucesso.`,
+    });
+    setIsSheetOpen(false);
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,7 +123,8 @@ export function Dashboard() {
         const newTxs: Transaction[] = result.data.map((tx: ExtractTransactionDataOutput['transactions'][0]) => ({
           ...tx,
           id: `${new Date().getTime()}-${tx.description}`,
-          type: 'despesa',
+          type: tx.amount > 0 ? 'despesa' : 'receita', // Basic logic, could be improved
+          amount: Math.abs(tx.amount),
           category: 'Outros',
           source: 'upload',
           status: 'pendente',
@@ -136,7 +177,7 @@ export function Dashboard() {
             )}
             Carregar Documento
           </Button>
-          <Button size="sm" onClick={() => setIsSheetOpen(true)}>
+          <Button size="sm" onClick={handleOpenAddSheet}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Adicionar Transação
           </Button>
@@ -147,7 +188,7 @@ export function Dashboard() {
 
       <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
         <div className="xl:col-span-2">
-            <RecentTransactions transactions={transactions} />
+            <RecentTransactions transactions={transactions} onEdit={handleOpenEditSheet} limit={7} />
         </div>
         <div className="space-y-4">
             <CategoryChart transactions={transactions} />
@@ -162,6 +203,8 @@ export function Dashboard() {
         isOpen={isSheetOpen} 
         onOpenChange={setIsSheetOpen}
         onAddTransaction={handleAddTransaction}
+        onUpdateTransaction={handleUpdateTransaction}
+        transactionToEdit={transactionToEdit}
        />
     </main>
   );
