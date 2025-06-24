@@ -63,6 +63,7 @@ export function RecentTransactions({ transactions, onEdit, limit }: RecentTransa
             <TableRow>
               <TableHead>Descrição</TableHead>
               <TableHead className="hidden sm:table-cell">Categoria</TableHead>
+              <TableHead className="hidden sm:table-cell">Fonte</TableHead>
               <TableHead className="hidden sm:table-cell">Data</TableHead>
               <TableHead className="text-right">Valor</TableHead>
               {onEdit && <TableHead className="w-[50px] text-right">Ações</TableHead>}
@@ -79,6 +80,9 @@ export function RecentTransactions({ transactions, onEdit, limit }: RecentTransa
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">
                   <Badge variant="outline">{transaction.category}</Badge>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">
+                  <Badge variant="secondary" className="capitalize">{transaction.source}</Badge>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">{formatDate(transaction.date)}</TableCell>
                 <TableCell
