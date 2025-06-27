@@ -1,3 +1,4 @@
+
 export type Transaction = {
   id: string;
   description: string;
@@ -23,3 +24,12 @@ export type Message = {
   role: "user" | "assistant";
   content: string;
 };
+
+export type LoginCredentials = {
+  email: string;
+  password: string
+}
+
+export type RegisterCredentials = LoginCredentials & {
+  name: string;
+}
