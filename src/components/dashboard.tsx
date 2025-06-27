@@ -15,20 +15,11 @@ import { type AnalyzeSpendingOutput } from "@/ai/flows/analyze-spending";
 import { runAnalyzeSpending, runExtractTransactionData } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { type ExtractTransactionDataOutput } from "@/ai/flows/extract-transaction-data";
-
-const initialTransactions: Transaction[] = [
-  { id: "1", description: "Salário", amount: 5000, type: "receita", date: "2024-05-01", category: "Salário", source: "sample", status: "consolidado" },
-  { id: "2", description: "Aluguel", amount: 1500, type: "despesa", date: "2024-05-05", category: "Moradia", source: "sample", status: "consolidado" },
-  { id: "3", description: "Supermercado", amount: 450, type: "despesa", date: "2024-05-07", category: "Alimentação", source: "sample", status: "consolidado" },
-  { id: "4", description: "Conta de Luz", amount: 150, type: "despesa", date: "2024-05-10", category: "Moradia", source: "sample", status: "consolidado" },
-  { id: "5", description: "Netflix", amount: 39.9, type: "despesa", date: "2024-05-12", category: "Assinaturas & Serviços", source: "sample", status: "consolidado" },
-  { id: "6", description: "Cinema", amount: 60, type: "despesa", date: "2024-05-15", category: "Lazer", source: "sample", status: "consolidado" },
-  { id: "7", description: "Uber", amount: 25.5, type: "despesa", date: "2024-05-18", category: "Transporte", source: "sample", status: "consolidado" },
-];
+import { useTransactions } from "@/hooks/use-transactions";
 
 export function Dashboard() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const { transactions, loading, addTransaction, updateTransaction } = useTransactions();
   const [insights, setInsights] = useState<AnalyzeSpendingOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -38,6 +29,7 @@ export function Dashboard() {
 
   useEffect(() => {
     async function analyze() {
+      if (loading) return; // Wait for transactions to load
       const consolidatedTransactions = transactions.filter(t => t.status === 'consolidado');
       if(consolidatedTransactions.length > 3) {
         setIsAnalyzing(true);
@@ -67,7 +59,7 @@ export function Dashboard() {
       }
     }
     analyze();
-  }, [transactions, toast]);
+  }, [transactions, loading, toast]);
   
   useEffect(() => {
     if (!isSheetOpen) {
@@ -85,26 +77,23 @@ export function Dashboard() {
     setIsSheetOpen(true);
   };
 
-  const handleAddTransaction = (newTransactionData: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score">) => {
+  const handleAddTransaction = async (newTransactionData: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score">) => {
     const today = format(new Date(), "yyyy-MM-dd");
-    const newTransaction: Transaction = {
+    const transactionToAdd = {
       ...newTransactionData,
-      id: new Date().getTime().toString(),
       source: "manual",
       status: newTransactionData.date > today ? "pendente" : "consolidado",
     };
-    setTransactions(prev => [newTransaction, ...prev]);
+    await addTransaction(transactionToAdd as Omit<Transaction, "id">);
      toast({
       title: "Transação Adicionada",
-      description: `"${newTransaction.description}" foi adicionada com sucesso.`,
+      description: `"${newTransactionData.description}" foi adicionada com sucesso.`,
     });
     setIsSheetOpen(false);
   };
   
-  const handleUpdateTransaction = (updatedTransaction: Transaction) => {
-    setTransactions(prev =>
-      prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t))
-    );
+  const handleUpdateTransaction = async (updatedTransaction: Transaction) => {
+    await updateTransaction(updatedTransaction.id, updatedTransaction);
     toast({
       title: "Transação Atualizada",
       description: `"${updatedTransaction.description}" foi atualizada com sucesso.`,
@@ -125,7 +114,7 @@ export function Dashboard() {
         const result = await runExtractTransactionData(dataUri);
 
         if (result.data) {
-          const allNewTxs: Transaction[] = [];
+          const allNewTxs: Omit<Transaction, 'id'>[] = [];
           
           result.data.forEach((tx: ExtractTransactionDataOutput['transactions'][0]) => {
             const isInstallment = tx.installmentNumber && tx.totalInstallments && tx.totalInstallments > 1;
@@ -133,7 +122,7 @@ export function Dashboard() {
             const baseTx: Omit<Transaction, 'id'| 'description'> = {
                 amount: Math.abs(tx.amount),
                 date: tx.date,
-                type: tx.amount > 0 ? 'despesa' : 'receita', // Basic logic, could be improved
+                type: tx.amount >= 0 ? 'despesa' : 'receita', // Basic logic, could be improved
                 category: 'Outros', // Default category, user can change later
                 source: 'upload',
                 status: 'consolidado', // will be updated below
@@ -146,9 +135,8 @@ export function Dashboard() {
             today.setHours(0,0,0,0);
 
             // Add the original transaction from the document
-            const originalTx: Transaction = {
+            const originalTx: Omit<Transaction, 'id'> = {
                 ...baseTx,
-                id: `${new Date().getTime()}-${tx.description}-${Math.random()}`,
                 description: isInstallment ? `${tx.description.replace(/(\d+[/of]+\d+)/, '').trim()} (${tx.installmentNumber}/${tx.totalInstallments})` : tx.description,
                 status: originalDate > today ? "pendente" : "consolidado",
             };
@@ -158,9 +146,8 @@ export function Dashboard() {
             if (isInstallment && tx.installmentNumber! < tx.totalInstallments!) {
               for (let i = tx.installmentNumber! + 1; i <= tx.totalInstallments!; i++) {
                 const futureDate = addMonths(originalDate, i - tx.installmentNumber!);
-                const futureTx: Transaction = {
+                const futureTx: Omit<Transaction, 'id'> = {
                   ...baseTx,
-                  id: `${new Date().getTime()}-${tx.description}-${i}`,
                   date: format(futureDate, "yyyy-MM-dd"),
                   description: `${tx.description.replace(/(\d+[/of]+\d+)/, '').trim()} (${i}/${tx.totalInstallments})`,
                   installmentNumber: i,
@@ -172,7 +159,11 @@ export function Dashboard() {
             }
           });
           
-          setTransactions(prev => [...allNewTxs, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          // Batch add transactions
+          for (const tx of allNewTxs) {
+            await addTransaction(tx);
+          }
+
           toast({
             title: "Documento Processado",
             description: `${allNewTxs.length} transações foram extraídas e adicionadas.`,
@@ -238,7 +229,7 @@ export function Dashboard() {
 
       <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
         <div className="xl:col-span-2">
-            <RecentTransactions transactions={transactions} onEdit={handleOpenEditSheet} limit={7} />
+            <RecentTransactions transactions={transactions} onEdit={handleOpenEditSheet} limit={7} loading={loading}/>
         </div>
         <div className="space-y-4">
             <CategoryChart transactions={transactions} />
@@ -246,7 +237,7 @@ export function Dashboard() {
       </div>
 
        <div className="grid gap-4 md:gap-8">
-         <AiInsights insights={insights} isLoading={isAnalyzing} />
+         <AiInsights insights={insights} isLoading={isAnalyzing || loading} />
        </div>
 
       <AddTransactionSheet 

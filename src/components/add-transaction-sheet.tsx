@@ -41,7 +41,7 @@ import { cn } from "@/lib/utils";
 import { Transaction } from "@/types";
 import { runCategorizeTransaction } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
-import useLocalStorage from "@/hooks/use-local-storage";
+import { useCategories } from "@/hooks/use-categories";
 import { defaultCategories } from "@/lib/categories";
 
 const formSchema = z.object({
@@ -67,7 +67,7 @@ type AddTransactionSheetProps = {
 export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, onUpdateTransaction, transactionToEdit }: AddTransactionSheetProps) {
   const [isCategorizing, setIsCategorizing] = useState(false);
   const { toast } = useToast();
-  const [categories] = useLocalStorage<string[]>('user_categories', defaultCategories);
+  const { categories } = useCategories();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

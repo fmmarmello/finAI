@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowRightLeft,
   LayoutDashboard,
   Settings,
   Target,
   Bot,
+  Loader2,
 } from "lucide-react";
 
 import {
@@ -21,9 +22,36 @@ import {
   SidebarInset,
 } from "@/components/ui/sidebar";
 import Logo from "@/components/logo";
+import { useAuth } from "@/contexts/auth-context";
+import { useEffect } from "react";
 
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+  
+  if (loading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    // Return children for login page to render
+    if (pathname === '/login') {
+      return <>{children}</>
+    }
+    // Return null or a loader while redirecting for other pages
+    return null;
+  }
 
   return (
     <SidebarProvider>

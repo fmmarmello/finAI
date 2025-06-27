@@ -19,17 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { runConversationalChat } from "@/lib/actions";
 import { Message, Transaction } from "@/types";
-
-// Using the same initial transactions for the assistant's context
-const initialTransactions: Transaction[] = [
-    { id: "1", description: "Salário", amount: 5000, type: "receita", date: "2024-05-01", category: "Salário", source: "sample", status: "consolidado" },
-    { id: "2", description: "Aluguel", amount: 1500, type: "despesa", date: "2024-05-05", category: "Moradia", source: "sample", status: "consolidado" },
-    { id: "3", description: "Supermercado", amount: 450, type: "despesa", date: "2024-05-07", category: "Alimentação", source: "sample", status: "consolidado" },
-    { id: "4", description: "Conta de Luz", amount: 150, type: "despesa", date: "2024-05-10", category: "Moradia", source: "sample", status: "consolidado" },
-    { id: "5", description: "Netflix", amount: 39.9, type: "despesa", date: "2024-05-12", category: "Assinaturas & Serviços", source: "sample", status: "consolidado" },
-    { id: "6", description: "Cinema", amount: 60, type: "despesa", date: "2024-05-15", category: "Lazer", source: "sample", status: "consolidado" },
-    { id: "7", description: "Uber", amount: 25.5, type: "despesa", date: "2024-05-18", category: "Transporte", source: "sample", status: "consolidado" },
-];
+import { useTransactions } from "@/hooks/use-transactions";
 
 export function AiAssistantPage() {
   const [messages, setMessages] = useState<Message[]>([
@@ -40,8 +30,8 @@ export function AiAssistantPage() {
     },
   ]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [transactions] = useState<Transaction[]>(initialTransactions); // In a real app, this would be fetched
+  const [isAnswering, setIsAnswering] = useState(false);
+  const { transactions, loading } = useTransactions();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
@@ -56,7 +46,7 @@ export function AiAssistantPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isAnswering) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -66,7 +56,7 @@ export function AiAssistantPage() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setIsLoading(true);
+    setIsAnswering(true);
 
     try {
       const result = await runConversationalChat(input, transactions);
@@ -96,7 +86,7 @@ export function AiAssistantPage() {
         };
        setMessages((prev) => [...prev, assistantErrorMessage]);
     } finally {
-      setIsLoading(false);
+      setIsAnswering(false);
     }
   };
 
@@ -112,7 +102,7 @@ export function AiAssistantPage() {
         <CardHeader>
           <CardTitle>Chat Financeiro</CardTitle>
           <CardDescription>
-            Faça perguntas sobre suas finanças em linguagem natural.
+            Faça perguntas sobre suas finanças em linguagem natural. Os dados estão sendo carregados...
           </CardDescription>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden">
@@ -152,7 +142,7 @@ export function AiAssistantPage() {
                     )}
                     </div>
                 ))}
-                 {isLoading && (
+                 {isAnswering && (
                     <div className="flex items-start gap-4">
                         <Avatar className="h-8 w-8">
                             <AvatarFallback>
@@ -176,9 +166,9 @@ export function AiAssistantPage() {
               autoComplete="off"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              disabled={isLoading}
+              disabled={isAnswering || loading}
             />
-            <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
+            <Button type="submit" size="icon" disabled={isAnswering || loading || !input.trim()}>
               <Send className="h-4 w-4" />
               <span className="sr-only">Enviar</span>
             </Button>

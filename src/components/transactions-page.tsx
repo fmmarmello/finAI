@@ -11,22 +11,11 @@ import { AddTransactionSheet } from "./add-transaction-sheet";
 import { Transaction } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-
-const initialTransactions: Transaction[] = [
-    { id: "1", description: "Salário", amount: 5000, type: "receita", date: "2024-05-01", category: "Salário", source: "sample", status: "consolidado" },
-    { id: "2", description: "Aluguel", amount: 1500, type: "despesa", date: "2024-05-05", category: "Moradia", source: "sample", status: "consolidado" },
-    { id: "3", description: "Supermercado", amount: 450, type: "despesa", date: "2024-05-07", category: "Alimentação", source: "sample", status: "consolidado" },
-    { id: "4", description: "Conta de Luz", amount: 150, type: "despesa", date: "2024-05-10", category: "Moradia", source: "sample", status: "consolidado" },
-    { id: "5", description: "Netflix", amount: 39.9, type: "despesa", date: "2024-05-12", category: "Assinaturas & Serviços", source: "sample", status: "consolidado" },
-    { id: "6", description: "Cinema", amount: 60, type: "despesa", date: "2024-05-15", category: "Lazer", source: "sample", status: "consolidado" },
-    { id: "7", description: "Uber", amount: 25.5, type: "despesa", date: "2024-05-18", category: "Transporte", source: "sample", status: "consolidado" },
-];
+import { useTransactions } from "@/hooks/use-transactions";
 
 export function TransactionsPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [transactions, setTransactions] = useState<Transaction[]>(() => 
-    initialTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  );
+  const { transactions, loading, addTransaction, updateTransaction } = useTransactions();
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const { toast } = useToast();
   
@@ -51,27 +40,23 @@ export function TransactionsPage() {
     setIsSheetOpen(true);
   };
 
-  const handleAddTransaction = (newTransactionData: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score">) => {
+  const handleAddTransaction = async (newTransactionData: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score">) => {
     const today = format(new Date(), "yyyy-MM-dd");
-    const newTransaction: Transaction = {
+    const newTransaction: Omit<Transaction, "id"> = {
       ...newTransactionData,
-      id: new Date().getTime().toString(),
       source: "manual",
       status: newTransactionData.date > today ? "pendente" : "consolidado",
     };
-    setTransactions(prev => [newTransaction, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    await addTransaction(newTransaction);
     toast({
       title: "Transação Adicionada",
-      description: `"${newTransaction.description}" foi adicionada com sucesso.`,
+      description: `"${newTransactionData.description}" foi adicionada com sucesso.`,
     });
     setIsSheetOpen(false);
   };
 
-  const handleUpdateTransaction = (updatedTransaction: Transaction) => {
-    setTransactions(prev =>
-      prev.map(t => (t.id === updatedTransaction.id ? updatedTransaction : t))
-       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    );
+  const handleUpdateTransaction = async (updatedTransaction: Transaction) => {
+    await updateTransaction(updatedTransaction.id, updatedTransaction);
     toast({
       title: "Transação Atualizada",
       description: `"${updatedTransaction.description}" foi atualizada com sucesso.`,
@@ -101,7 +86,7 @@ export function TransactionsPage() {
           </Button>
         </div>
       </div>
-      <RecentTransactions transactions={filteredTransactions} onEdit={handleOpenEditSheet} />
+      <RecentTransactions transactions={filteredTransactions} onEdit={handleOpenEditSheet} loading={loading} />
       <AddTransactionSheet
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}

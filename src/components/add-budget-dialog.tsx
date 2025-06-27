@@ -31,8 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Budget } from "@/types";
-import useLocalStorage from "@/hooks/use-local-storage";
-import { defaultCategories } from "@/lib/categories";
+import { useCategories } from "@/hooks/use-categories";
 
 const formSchema = z.object({
   category: z.string().min(1, { message: "A categoria é obrigatória." }),
@@ -56,7 +55,7 @@ export function AddBudgetDialog({
   budgetToEdit,
   existingCategories,
 }: AddBudgetDialogProps) {
-  const [userCategories] = useLocalStorage<string[]>('user_categories', defaultCategories);
+  const { categories: userCategories } = useCategories();
   const expenseCategories = userCategories.filter(c => c !== 'Salário');
 
   const form = useForm<z.infer<typeof formSchema>>({
