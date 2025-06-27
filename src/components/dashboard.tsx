@@ -1,8 +1,10 @@
+
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { PlusCircle, Upload, Loader2 } from "lucide-react";
-import { format, addMonths } from "date-fns";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { PlusCircle, Upload, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, isEqual, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 import { Button } from "@/components/ui/button";
 import { BalanceSummary } from "./balance-summary";
@@ -19,18 +21,29 @@ import { useTransactions } from "@/hooks/use-transactions";
 
 export function Dashboard() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const { transactions, loading, addTransaction, updateTransaction } = useTransactions();
+  const { transactions, loading, addTransaction, updateTransaction, markTransactionAsPaid } = useTransactions();
   const [insights, setInsights] = useState<AnalyzeSpendingOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
+  const [displayDate, setDisplayDate] = useState(new Date());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const transactionsForMonth = useMemo(() => {
+    if (loading) return [];
+    const start = startOfMonth(displayDate);
+    const end = endOfMonth(displayDate);
+    return transactions.filter(t => {
+        const transactionDate = parseISO(`${t.date}T00:00:00.000Z`);
+        return transactionDate >= start && transactionDate <= end;
+    });
+  }, [transactions, displayDate, loading]);
 
   useEffect(() => {
     async function analyze() {
       if (loading) return; // Wait for transactions to load
-      const consolidatedTransactions = transactions.filter(t => t.status === 'consolidado');
+      const consolidatedTransactions = transactionsForMonth.filter(t => t.status === 'consolidado');
       if(consolidatedTransactions.length > 3) {
         setIsAnalyzing(true);
         try {
@@ -59,7 +72,7 @@ export function Dashboard() {
       }
     }
     analyze();
-  }, [transactions, loading, toast]);
+  }, [transactionsForMonth, loading, toast]);
   
   useEffect(() => {
     if (!isSheetOpen) {
@@ -75,6 +88,14 @@ export function Dashboard() {
   const handleOpenEditSheet = (transaction: Transaction) => {
     setTransactionToEdit(transaction);
     setIsSheetOpen(true);
+  };
+  
+  const handleMarkAsPaid = async (transaction: Transaction) => {
+    await markTransactionAsPaid(transaction);
+    toast({
+        title: "Transação Paga!",
+        description: `"${transaction.description}" foi marcada como paga.`,
+    });
   };
 
   const handleAddTransaction = async (newTransactionData: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score">) => {
@@ -137,7 +158,7 @@ export function Dashboard() {
             // Add the original transaction from the document
             const originalTx: Omit<Transaction, 'id'> = {
                 ...baseTx,
-                description: isInstallment ? `${tx.description.replace(/(\d+[/of]+\d+)/, '').trim()} (${tx.installmentNumber}/${tx.totalInstallments})` : tx.description,
+                description: isInstallment ? `${tx.description.replace(/(\\d+[/of]+\\d+)/, '').trim()} (${tx.installmentNumber}/${tx.totalInstallments})` : tx.description,
                 status: originalDate > today ? "pendente" : "consolidado",
             };
             allNewTxs.push(originalTx);
@@ -149,7 +170,7 @@ export function Dashboard() {
                 const futureTx: Omit<Transaction, 'id'> = {
                   ...baseTx,
                   date: format(futureDate, "yyyy-MM-dd"),
-                  description: `${tx.description.replace(/(\d+[/of]+\d+)/, '').trim()} (${i}/${tx.totalInstallments})`,
+                  description: `${tx.description.replace(/(\\d+[/of]+\\d+)/, '').trim()} (${i}/${tx.totalInstallments})`,
                   installmentNumber: i,
                   totalInstallments: tx.totalInstallments,
                   status: 'pendente', // All future installments are pending
@@ -197,11 +218,25 @@ export function Dashboard() {
       setIsExtracting(false);
     }
   };
+  
+  const isCurrentMonth = isEqual(startOfMonth(displayDate), startOfMonth(new Date()));
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:p-6 xl:p-8">
-      <div className="flex items-center">
-        <h1 className="text-lg font-semibold md:text-2xl font-headline">Dashboard</h1>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setDisplayDate(d => subMonths(d, 1))}>
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Mês anterior</span>
+            </Button>
+            <h1 className="text-lg font-semibold md:text-xl font-headline w-48 text-center capitalize">
+                {format(displayDate, "MMMM 'de' yyyy", { locale: ptBR })}
+            </h1>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setDisplayDate(d => addMonths(d, 1))} disabled={isCurrentMonth}>
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Próximo mês</span>
+            </Button>
+        </div>
         <div className="ml-auto flex items-center gap-2">
            <input
               type="file"
@@ -225,14 +260,14 @@ export function Dashboard() {
         </div>
       </div>
 
-      <BalanceSummary transactions={transactions} />
+      <BalanceSummary transactions={transactionsForMonth} />
 
       <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
         <div className="xl:col-span-2">
-            <RecentTransactions transactions={transactions} onEdit={handleOpenEditSheet} limit={7} loading={loading}/>
+            <RecentTransactions transactions={transactionsForMonth} onEdit={handleOpenEditSheet} onMarkAsPaid={handleMarkAsPaid} loading={loading}/>
         </div>
         <div className="space-y-4">
-            <CategoryChart transactions={transactions} />
+            <CategoryChart transactions={transactionsForMonth} />
         </div>
       </div>
 

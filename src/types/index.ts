@@ -8,6 +8,7 @@ export type Transaction = {
   category: string;
   source: "manual" | "upload" | "sample";
   status: "pendente" | "consolidado";
+  isRecurring?: boolean;
   ai_confidence_score?: number;
   installmentNumber?: number;
   totalInstallments?: number;
@@ -20,7 +21,7 @@ export type Budget = {
 };
 
 export type Message = {
-  id: string;
+  id:string;
   role: "user" | "assistant";
   content: string;
 };

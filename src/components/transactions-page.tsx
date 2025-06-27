@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -15,7 +16,7 @@ import { useTransactions } from "@/hooks/use-transactions";
 
 export function TransactionsPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const { transactions, loading, addTransaction, updateTransaction } = useTransactions();
+  const { transactions, loading, addTransaction, updateTransaction, markTransactionAsPaid } = useTransactions();
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const { toast } = useToast();
   
@@ -38,6 +39,14 @@ export function TransactionsPage() {
   const handleOpenEditSheet = (transaction: Transaction) => {
     setTransactionToEdit(transaction);
     setIsSheetOpen(true);
+  };
+  
+  const handleMarkAsPaid = async (transaction: Transaction) => {
+    await markTransactionAsPaid(transaction);
+    toast({
+        title: "Transação Paga!",
+        description: `"${transaction.description}" foi marcada como paga.`,
+    });
   };
 
   const handleAddTransaction = async (newTransactionData: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score">) => {
@@ -86,7 +95,7 @@ export function TransactionsPage() {
           </Button>
         </div>
       </div>
-      <RecentTransactions transactions={filteredTransactions} onEdit={handleOpenEditSheet} loading={loading} />
+      <RecentTransactions transactions={filteredTransactions} onEdit={handleOpenEditSheet} onMarkAsPaid={handleMarkAsPaid} loading={loading} />
       <AddTransactionSheet
         isOpen={isSheetOpen}
         onOpenChange={setIsSheetOpen}

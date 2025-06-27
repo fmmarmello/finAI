@@ -1,6 +1,7 @@
+
 "use client";
 
-import { MoreVertical, Pencil, Loader2 } from "lucide-react";
+import { MoreVertical, Pencil, Loader2, CheckCircle2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -22,6 +23,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Transaction } from "@/types";
@@ -30,11 +32,12 @@ import { cn } from "@/lib/utils";
 type RecentTransactionsProps = {
   transactions: Transaction[];
   onEdit?: (transaction: Transaction) => void;
+  onMarkAsPaid?: (transaction: Transaction) => void;
   limit?: number;
   loading?: boolean;
 };
 
-export function RecentTransactions({ transactions, onEdit, limit, loading }: RecentTransactionsProps) {
+export function RecentTransactions({ transactions, onEdit, onMarkAsPaid, limit, loading }: RecentTransactionsProps) {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -49,6 +52,8 @@ export function RecentTransactions({ transactions, onEdit, limit, loading }: Rec
   }
 
   const transactionsToDisplay = limit ? transactions.slice(0, limit) : transactions;
+
+  const canPerformActions = onEdit || onMarkAsPaid;
 
   return (
     <Card>
@@ -72,7 +77,7 @@ export function RecentTransactions({ transactions, onEdit, limit, loading }: Rec
                 <TableHead className="hidden md:table-cell">Data</TableHead>
                 <TableHead className="hidden sm:table-cell">Status</TableHead>
                 <TableHead className="text-right">Valor</TableHead>
-                {onEdit && <TableHead className="w-[50px] text-right">Ações</TableHead>}
+                {canPerformActions && <TableHead className="w-[50px] text-right">Ações</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -104,7 +109,7 @@ export function RecentTransactions({ transactions, onEdit, limit, loading }: Rec
                       {transaction.type === "receita" ? "+" : "-"}
                       {formatCurrency(transaction.amount)}
                     </TableCell>
-                    {onEdit && (
+                    {canPerformActions && (
                       <TableCell className="text-right">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -114,10 +119,21 @@ export function RecentTransactions({ transactions, onEdit, limit, loading }: Rec
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onEdit(transaction)}>
-                              <Pencil className="mr-2 h-4 w-4" />
-                              Editar
-                            </DropdownMenuItem>
+                            {onMarkAsPaid && transaction.status === 'pendente' && (
+                                <>
+                                    <DropdownMenuItem onClick={() => onMarkAsPaid(transaction)}>
+                                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                                        Marcar como Paga
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                </>
+                            )}
+                            {onEdit && (
+                                <DropdownMenuItem onClick={() => onEdit(transaction)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Editar
+                                </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -126,7 +142,7 @@ export function RecentTransactions({ transactions, onEdit, limit, loading }: Rec
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={onEdit ? 6 : 5} className="h-24 text-center">
+                  <TableCell colSpan={canPerformActions ? 6 : 5} className="h-24 text-center">
                     Nenhuma transação encontrada.
                   </TableCell>
                 </TableRow>

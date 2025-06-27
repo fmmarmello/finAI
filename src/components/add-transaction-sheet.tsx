@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -43,6 +44,7 @@ import { runCategorizeTransaction } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { useCategories } from "@/hooks/use-categories";
 import { defaultCategories } from "@/lib/categories";
+import { Switch } from "./ui/switch";
 
 const formSchema = z.object({
   description: z.string().min(2, {
@@ -54,6 +56,7 @@ const formSchema = z.object({
   }),
   type: z.enum(["receita", "despesa"]),
   category: z.string().min(1, { message: "A categoria é obrigatória." }),
+  isRecurring: z.boolean().default(false),
 });
 
 type AddTransactionSheetProps = {
@@ -77,8 +80,11 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, on
       date: new Date(),
       type: "despesa",
       category: "",
+      isRecurring: false,
     },
   });
+
+  const transactionType = form.watch("type");
 
   useEffect(() => {
     if (transactionToEdit) {
@@ -86,6 +92,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, on
       form.reset({
         ...transactionToEdit,
         date: new Date(year, month - 1, day),
+        isRecurring: transactionToEdit.isRecurring || false,
       });
     } else {
       form.reset({
@@ -94,6 +101,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, on
         date: new Date(),
         type: "despesa",
         category: "",
+        isRecurring: false,
       });
     }
   }, [transactionToEdit, form, isOpen]);
@@ -127,20 +135,26 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, on
   }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    const finalValues = {
+        ...values,
+        isRecurring: values.type === 'despesa' ? values.isRecurring : false,
+    }
+
     if (transactionToEdit) {
       const updatedTransaction: Transaction = {
         ...transactionToEdit,
-        description: values.description,
-        amount: values.amount,
-        date: format(values.date, "yyyy-MM-dd"),
-        type: values.type,
-        category: values.category,
+        description: finalValues.description,
+        amount: finalValues.amount,
+        date: format(finalValues.date, "yyyy-MM-dd"),
+        type: finalValues.type,
+        category: finalValues.category,
+        isRecurring: finalValues.isRecurring,
       };
       onUpdateTransaction(updatedTransaction);
     } else {
       const transactionData = {
-        ...values,
-        date: format(values.date, "yyyy-MM-dd"),
+        ...finalValues,
+        date: format(finalValues.date, "yyyy-MM-dd"),
       };
       onAddTransaction(transactionData);
     }
@@ -150,7 +164,7 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, on
 
   return (
     <Sheet open={isOpen} onOpenChange={onOpenChange}>
-      <SheetContent>
+      <SheetContent className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{isEditMode ? 'Editar Transação' : 'Adicionar Transação'}</SheetTitle>
           <SheetDescription>
@@ -274,6 +288,26 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, on
                 </FormItem>
               )}
             />
+             {transactionType === 'despesa' && (
+                <FormField
+                control={form.control}
+                name="isRecurring"
+                render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3">
+                        <div className="space-y-0.5">
+                            <FormLabel>Despesa Recorrente</FormLabel>
+                            <FormMessage />
+                        </div>
+                        <FormControl>
+                            <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                            />
+                        </FormControl>
+                    </FormItem>
+                )}
+                />
+            )}
             <Button type="submit" className="w-full">{isEditMode ? 'Salvar Alterações' : 'Adicionar Transação'}</Button>
           </form>
         </Form>

@@ -15,6 +15,7 @@ import {
 import { firestore } from "@/lib/firebase";
 import { useAuth } from "@/contexts/auth-context";
 import { Transaction } from "@/types";
+import { addMonths, format } from "date-fns";
 
 export function useTransactions() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -85,6 +86,29 @@ export function useTransactions() {
     },
     [user]
   );
+  
+  const markTransactionAsPaid = useCallback(
+    async (transaction: Transaction) => {
+        if (!user) throw new Error("User not authenticated");
+
+        // 1. Mark current transaction as paid
+        await updateTransaction(transaction.id, { status: "consolidado" });
+
+        // 2. If it's recurring, create the next month's transaction
+        if (transaction.isRecurring) {
+            const nextDate = addMonths(new Date(`${transaction.date}T00:00:00`), 1);
+            
+            const nextTransaction: Omit<Transaction, "id"> = {
+                ...transaction,
+                date: format(nextDate, "yyyy-MM-dd"),
+                status: "pendente",
+            };
+            // remove properties that should not be copied
+            delete nextTransaction.id;
+            
+            await addTransaction(nextTransaction);
+        }
+    }, [user, addTransaction, updateTransaction]);
 
   const deleteTransaction = useCallback(
     async (id: string) => {
@@ -104,5 +128,6 @@ export function useTransactions() {
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    markTransactionAsPaid,
   };
 }
