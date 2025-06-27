@@ -2,6 +2,7 @@
 
 import { analyzeSpending, AnalyzeSpendingInput } from "@/ai/flows/analyze-spending";
 import { categorizeTransaction } from "@/ai/flows/categorize-transaction";
+import { conversationalChat, ConversationalChatInput } from "@/ai/flows/conversational-chat";
 import { extractTransactionData } from "@/ai/flows/extract-transaction-data";
 import { Transaction } from "@/types";
 
@@ -42,4 +43,22 @@ export async function runExtractTransactionData(documentDataUri: string) {
     console.error(error);
     return { error: 'Failed to extract data from document.' };
   }
+}
+
+export async function runConversationalChat(query: string, transactions: Transaction[]) {
+    const formattedTransactions: ConversationalChatInput['transactions'] = transactions.map(t => ({
+        description: t.description,
+        amount: t.amount,
+        date: t.date,
+        category: t.category,
+        type: t.type,
+    }));
+
+    try {
+        const result = await conversationalChat({ query, transactions: formattedTransactions, currency: 'BRL' });
+        return { data: result };
+    } catch (error) {
+        console.error(error);
+        return { error: 'Failed to get response from AI assistant.' };
+    }
 }

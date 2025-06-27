@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   Settings,
   Target,
+  Bot,
 } from "lucide-react";
 
 import {
@@ -56,6 +57,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                 <Link href="/budgets">
                     <Target />
                     <span>Orçamentos</span>
+                </Link>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith("/ai-assistant")} tooltip="Assistente com IA">
+                <Link href="/ai-assistant">
+                    <Bot />
+                    <span>Assistente IA</span>
                 </Link>
                 </SidebarMenuButton>
             </SidebarMenuItem>

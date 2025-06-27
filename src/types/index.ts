@@ -15,3 +15,9 @@ export type Budget = {
   category: string;
   amount: number;
 };
+
+export type Message = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+};
