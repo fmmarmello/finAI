@@ -41,6 +41,8 @@ import { cn } from "@/lib/utils";
 import { Transaction } from "@/types";
 import { runCategorizeTransaction } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
+import useLocalStorage from "@/hooks/use-local-storage";
+import { defaultCategories } from "@/lib/categories";
 
 const formSchema = z.object({
   description: z.string().min(2, {
@@ -62,21 +64,10 @@ type AddTransactionSheetProps = {
   transactionToEdit: Transaction | null;
 };
 
-const categories = [
-  "Alimentação",
-  "Transporte",
-  "Assinaturas & Serviços",
-  "Moradia",
-  "Lazer",
-  "Saúde",
-  "Compras",
-  "Salário",
-  "Outros",
-];
-
 export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, onUpdateTransaction, transactionToEdit }: AddTransactionSheetProps) {
   const [isCategorizing, setIsCategorizing] = useState(false);
   const { toast } = useToast();
+  const [categories] = useLocalStorage<string[]>('user_categories', defaultCategories);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -114,11 +105,14 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, on
     try {
       const result = await runCategorizeTransaction(description);
       if (result.data) {
+        // Match against user's categories (case-insensitive)
         const categoryMatch = categories.find(c => c.toLowerCase() === result.data.category.toLowerCase());
         if (categoryMatch) {
           form.setValue("category", categoryMatch);
         } else {
-          form.setValue("category", "Outros");
+          // If no match in user's list, but it's a default one, use it. Otherwise, "Outros".
+          const defaultMatch = defaultCategories.find(c => c.toLowerCase() === result.data.category.toLowerCase());
+          form.setValue("category", defaultMatch || "Outros");
         }
       }
     } catch(e) {
