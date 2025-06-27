@@ -26,6 +26,8 @@ const TransactionSchema = z.object({
   date: z.string().describe('The date of the transaction (YYYY-MM-DD).'),
   description: z.string().describe('A short description of the transaction.'),
   amount: z.number().describe('The amount of the transaction.'),
+  installmentNumber: z.number().optional().describe('If this is an installment payment, the current installment number.'),
+  totalInstallments: z.number().optional().describe('If this is an installment payment, the total number of installments.'),
 });
 
 const ExtractTransactionDataOutputSchema = z.object({
@@ -47,6 +49,9 @@ const prompt = ai.definePrompt({
   The document image will be provided as a data URI.
 
   Carefully analyze the document and extract all relevant transactions. Each transaction should include the date, a description, and the amount.
+  
+  **CRITICALLY IMPORTANT**: If a transaction is an installment (e.g., "Parcela 2/12", "2 of 12", "item name 3/6"), you MUST extract the current installment number into the \`installmentNumber\` field and the total number of installments into the \`totalInstallments\` field. If it is not an installment, leave these fields blank.
+
   The output MUST be a JSON array of transactions matching the schema.
 
   Here is the document:

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { PlusCircle, Upload, Loader2 } from "lucide-react";
+import { format, addMonths } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { BalanceSummary } from "./balance-summary";
@@ -37,10 +38,11 @@ export function Dashboard() {
 
   useEffect(() => {
     async function analyze() {
-      if(transactions.length > 3) {
+      const consolidatedTransactions = transactions.filter(t => t.status === 'consolidado');
+      if(consolidatedTransactions.length > 3) {
         setIsAnalyzing(true);
         try {
-          const result = await runAnalyzeSpending(transactions);
+          const result = await runAnalyzeSpending(consolidatedTransactions);
           if (result.data) {
             setInsights(result.data);
           } else {
@@ -61,6 +63,7 @@ export function Dashboard() {
         }
       } else {
         setInsights(null);
+        setIsAnalyzing(false);
       }
     }
     analyze();
@@ -83,11 +86,12 @@ export function Dashboard() {
   };
 
   const handleAddTransaction = (newTransactionData: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score">) => {
+    const today = format(new Date(), "yyyy-MM-dd");
     const newTransaction: Transaction = {
       ...newTransactionData,
       id: new Date().getTime().toString(),
       source: "manual",
-      status: "consolidado",
+      status: newTransactionData.date > today ? "pendente" : "consolidado",
     };
     setTransactions(prev => [newTransaction, ...prev]);
      toast({
@@ -116,32 +120,82 @@ export function Dashboard() {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = async () => {
-      const dataUri = reader.result as string;
-      const result = await runExtractTransactionData(dataUri);
+      try {
+        const dataUri = reader.result as string;
+        const result = await runExtractTransactionData(dataUri);
 
-      if (result.data) {
-        const newTxs: Transaction[] = result.data.map((tx: ExtractTransactionDataOutput['transactions'][0]) => ({
-          ...tx,
-          id: `${new Date().getTime()}-${tx.description}`,
-          type: tx.amount > 0 ? 'despesa' : 'receita', // Basic logic, could be improved
-          amount: Math.abs(tx.amount),
-          category: 'Outros',
-          source: 'upload',
-          status: 'pendente',
-        }));
-        setTransactions(prev => [...newTxs, ...prev]);
-        toast({
-          title: "Documento Processado",
-          description: `${newTxs.length} transações foram extraídas e adicionadas.`,
-        });
-      } else {
-        toast({
+        if (result.data) {
+          const allNewTxs: Transaction[] = [];
+          
+          result.data.forEach((tx: ExtractTransactionDataOutput['transactions'][0]) => {
+            const isInstallment = tx.installmentNumber && tx.totalInstallments && tx.totalInstallments > 1;
+            
+            const baseTx: Omit<Transaction, 'id'| 'description'> = {
+                amount: Math.abs(tx.amount),
+                date: tx.date,
+                type: tx.amount > 0 ? 'despesa' : 'receita', // Basic logic, could be improved
+                category: 'Outros', // Default category, user can change later
+                source: 'upload',
+                status: 'consolidado', // will be updated below
+                installmentNumber: tx.installmentNumber,
+                totalInstallments: tx.totalInstallments,
+            };
+
+            const originalDate = new Date(`${tx.date}T00:00:00`);
+            const today = new Date();
+            today.setHours(0,0,0,0);
+
+            // Add the original transaction from the document
+            const originalTx: Transaction = {
+                ...baseTx,
+                id: `${new Date().getTime()}-${tx.description}-${Math.random()}`,
+                description: isInstallment ? `${tx.description.replace(/(\d+[/of]+\d+)/, '').trim()} (${tx.installmentNumber}/${tx.totalInstallments})` : tx.description,
+                status: originalDate > today ? "pendente" : "consolidado",
+            };
+            allNewTxs.push(originalTx);
+
+            // Create future installments if applicable
+            if (isInstallment && tx.installmentNumber! < tx.totalInstallments!) {
+              for (let i = tx.installmentNumber! + 1; i <= tx.totalInstallments!; i++) {
+                const futureDate = addMonths(originalDate, i - tx.installmentNumber!);
+                const futureTx: Transaction = {
+                  ...baseTx,
+                  id: `${new Date().getTime()}-${tx.description}-${i}`,
+                  date: format(futureDate, "yyyy-MM-dd"),
+                  description: `${tx.description.replace(/(\d+[/of]+\d+)/, '').trim()} (${i}/${tx.totalInstallments})`,
+                  installmentNumber: i,
+                  totalInstallments: tx.totalInstallments,
+                  status: 'pendente', // All future installments are pending
+                };
+                allNewTxs.push(futureTx);
+              }
+            }
+          });
+          
+          setTransactions(prev => [...allNewTxs, ...prev].sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+          toast({
+            title: "Documento Processado",
+            description: `${allNewTxs.length} transações foram extraídas e adicionadas.`,
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Erro na Extração",
+            description: result.error,
+          });
+        }
+      } catch (error) {
+         toast({
           variant: "destructive",
-          title: "Erro na Extração",
-          description: result.error,
+          title: "Erro no Processamento",
+          description: "Ocorreu um erro ao processar o arquivo.",
         });
+      } finally {
+        setIsExtracting(false);
+         if(fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
       }
-      setIsExtracting(false);
     };
     reader.onerror = () => {
        toast({
@@ -150,10 +204,6 @@ export function Dashboard() {
           description: "Não foi possível ler o arquivo.",
         });
       setIsExtracting(false);
-    }
-    
-    if(fileInputRef.current) {
-        fileInputRef.current.value = "";
     }
   };
 

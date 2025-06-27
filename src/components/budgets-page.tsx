@@ -56,6 +56,7 @@ function BudgetCard({ budget, transactions, onEdit, onDelete }: { budget: Budget
         const transactionDate = new Date(`${t.date}T00:00:00`);
         return t.category === budget.category &&
                t.type === 'despesa' &&
+               t.status === 'consolidado' &&
                transactionDate.getMonth() === currentMonth &&
                transactionDate.getFullYear() === currentYear;
       })

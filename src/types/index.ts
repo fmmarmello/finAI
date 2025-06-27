@@ -8,6 +8,8 @@ export type Transaction = {
   source: "manual" | "upload" | "sample";
   status: "pendente" | "consolidado";
   ai_confidence_score?: number;
+  installmentNumber?: number;
+  totalInstallments?: number;
 };
 
 export type Budget = {

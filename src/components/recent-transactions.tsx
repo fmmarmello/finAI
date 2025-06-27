@@ -63,15 +63,15 @@ export function RecentTransactions({ transactions, onEdit, limit }: RecentTransa
             <TableRow>
               <TableHead>Descrição</TableHead>
               <TableHead className="hidden sm:table-cell">Categoria</TableHead>
-              <TableHead className="hidden sm:table-cell">Fonte</TableHead>
-              <TableHead className="hidden sm:table-cell">Data</TableHead>
+              <TableHead className="hidden md:table-cell">Data</TableHead>
+              <TableHead className="hidden sm:table-cell">Status</TableHead>
               <TableHead className="text-right">Valor</TableHead>
               {onEdit && <TableHead className="w-[50px] text-right">Ações</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {transactionsToDisplay.map((transaction) => (
-              <TableRow key={transaction.id}>
+              <TableRow key={transaction.id} className={cn(transaction.status === 'pendente' && 'text-muted-foreground/80')}>
                 <TableCell>
                   <div className="font-medium">{transaction.description}</div>
                   <div className="text-sm text-muted-foreground md:hidden">
@@ -81,16 +81,17 @@ export function RecentTransactions({ transactions, onEdit, limit }: RecentTransa
                 <TableCell className="hidden sm:table-cell">
                   <Badge variant="outline">{transaction.category}</Badge>
                 </TableCell>
-                <TableCell className="hidden sm:table-cell">
-                  <Badge variant="secondary" className="capitalize">{transaction.source}</Badge>
+                <TableCell className="hidden md:table-cell">{formatDate(transaction.date)}</TableCell>
+                 <TableCell className="hidden sm:table-cell">
+                  <Badge variant={transaction.status === 'consolidado' ? 'secondary' : 'outline'} className="capitalize">{transaction.status}</Badge>
                 </TableCell>
-                <TableCell className="hidden sm:table-cell">{formatDate(transaction.date)}</TableCell>
                 <TableCell
                   className={cn(
                     "text-right font-medium",
                     transaction.type === "receita"
                       ? "text-green-500"
-                      : "text-red-500"
+                      : "text-red-500",
+                    transaction.status === 'pendente' && 'text-opacity-60'
                   )}
                 >
                   {transaction.type === "receita" ? "+" : "-"}

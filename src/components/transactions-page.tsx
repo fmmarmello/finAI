@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { PlusCircle } from "lucide-react";
 import { DateRange } from "react-day-picker";
-import { subDays } from "date-fns";
+import { subDays, format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import { RecentTransactions } from "./recent-transactions";
@@ -52,11 +52,12 @@ export function TransactionsPage() {
   };
 
   const handleAddTransaction = (newTransactionData: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score">) => {
+    const today = format(new Date(), "yyyy-MM-dd");
     const newTransaction: Transaction = {
       ...newTransactionData,
       id: new Date().getTime().toString(),
       source: "manual",
-      status: "consolidado",
+      status: newTransactionData.date > today ? "pendente" : "consolidado",
     };
     setTransactions(prev => [newTransaction, ...prev].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
     toast({

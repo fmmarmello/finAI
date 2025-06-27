@@ -14,11 +14,13 @@ type BalanceSummaryProps = {
 };
 
 export function BalanceSummary({ transactions }: BalanceSummaryProps) {
-  const income = transactions
+  const consolidatedTransactions = transactions.filter(t => t.status === 'consolidado');
+
+  const income = consolidatedTransactions
     .filter((t) => t.type === "receita")
     .reduce((acc, t) => acc + t.amount, 0);
 
-  const expenses = transactions
+  const expenses = consolidatedTransactions
     .filter((t) => t.type === "despesa")
     .reduce((acc, t) => acc + t.amount, 0);
 

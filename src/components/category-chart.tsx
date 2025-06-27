@@ -52,7 +52,7 @@ const chartConfig = {
 
 export function CategoryChart({ transactions }: CategoryChartProps) {
   const expenseData = transactions
-    .filter((t) => t.type === "despesa")
+    .filter((t) => t.type === "despesa" && t.status === "consolidado")
     .reduce((acc, t) => {
       const existing = acc.find((item) => item.name === t.category);
       if (existing) {
