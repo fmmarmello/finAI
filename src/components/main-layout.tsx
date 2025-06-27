@@ -6,6 +6,7 @@ import {
   ArrowRightLeft,
   LayoutDashboard,
   Settings,
+  Target,
 } from "lucide-react";
 
 import {
@@ -49,6 +50,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                   <span>Transações</span>
                 </Link>
               </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith("/budgets")} tooltip="Orçamentos">
+                <Link href="/budgets">
+                    <Target />
+                    <span>Orçamentos</span>
+                </Link>
+                </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={pathname.startsWith("/settings")} tooltip="Configurações">

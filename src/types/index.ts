@@ -9,3 +9,9 @@ export type Transaction = {
   status: "pendente" | "consolidado";
   ai_confidence_score?: number;
 };
+
+export type Budget = {
+  id: string;
+  category: string;
+  amount: number;
+};
