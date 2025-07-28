@@ -6,12 +6,13 @@ export type Transaction = {
   type: "receita" | "despesa";
   date: string; // YYYY-MM-DD
   category: string;
-  source: "manual" | "upload" | "sample";
+  source: "manual" | "upload" | "sample" | "template";
   status: "pendente" | "consolidado";
   isRecurring?: boolean;
   ai_confidence_score?: number;
   installmentNumber?: number;
   totalInstallments?: number;
+  templateId?: string; // Links back to an ExpenseTemplate
 };
 
 export type Budget = {
@@ -33,4 +34,10 @@ export type LoginCredentials = {
 
 export type RegisterCredentials = LoginCredentials & {
   name: string;
+}
+
+export type ExpenseTemplate = {
+    id: string;
+    name: string;
+    category: string;
 }

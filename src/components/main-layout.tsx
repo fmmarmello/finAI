@@ -9,6 +9,7 @@ import {
   Target,
   Bot,
   Loader2,
+  ClipboardPen,
 } from "lucide-react";
 
 import {
@@ -87,6 +88,14 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
                     <span>Orçamentos</span>
                 </Link>
                 </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={pathname.startsWith("/planning")} tooltip="Planejamento">
+                <Link href="/planning">
+                  <ClipboardPen />
+                  <span>Planejamento</span>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={pathname.startsWith("/ai-assistant")} tooltip="Assistente com IA">
