@@ -22,7 +22,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useCategories } from "@/hooks/use-categories";
+import { useData } from "@/contexts/data-context";
 import {
   Select,
   SelectContent,
@@ -50,7 +50,7 @@ export function ExpenseTemplateDialog({
   onSave,
   templateToEdit,
 }: ExpenseTemplateDialogProps) {
-  const { categories } = useCategories();
+  const { categories } = useData();
   const expenseCategories = categories.filter(c => c !== 'Salário');
 
   const form = useForm<z.infer<typeof formSchema>>({

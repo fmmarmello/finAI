@@ -8,17 +8,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { useExpenseTemplates } from "@/hooks/use-expense-templates";
 import { useToast } from "@/hooks/use-toast";
-import { ClipboardPen, Loader2, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { ClipboardPen, Pencil, PlusCircle, Trash2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExpenseTemplate } from "@/types";
 import { ExpenseTemplateDialog } from "./expense-template-dialog";
 import { DeleteTemplateAlert } from "./delete-template-alert";
+import { useData } from "@/contexts/data-context";
 
 export function PlanningPage() {
-  const { templates, loading, addTemplate, updateTemplate, deleteTemplate } = useExpenseTemplates();
+  const { templates, loading, addTemplate, updateTemplate, deleteTemplate } = useData();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [templateToEdit, setTemplateToEdit] = useState<ExpenseTemplate | null>(null);

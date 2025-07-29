@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -19,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { runConversationalChat } from "@/lib/actions";
 import { Message, Transaction } from "@/types";
-import { useTransactions } from "@/hooks/use-transactions";
+import { useData } from "@/contexts/data-context";
 
 export function AiAssistantPage() {
   const [messages, setMessages] = useState<Message[]>([
@@ -31,7 +32,7 @@ export function AiAssistantPage() {
   ]);
   const [input, setInput] = useState("");
   const [isAnswering, setIsAnswering] = useState(false);
-  const { transactions, loading } = useTransactions();
+  const { transactions, loading } = useData();
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 

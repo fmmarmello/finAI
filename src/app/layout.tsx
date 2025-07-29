@@ -4,6 +4,7 @@ import "./globals.css";
 import { MainLayout } from "@/components/main-layout";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/contexts/auth-context";
+import { DataProvider } from "@/contexts/data-context";
 
 export const metadata: Metadata = {
   title: "FinAI: Seu Assistente Financeiro",
@@ -24,17 +25,19 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <MainLayout>
-              {children}
-            </MainLayout>
-            <Toaster />
-          </ThemeProvider>
+          <DataProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <MainLayout>
+                {children}
+              </MainLayout>
+              <Toaster />
+            </ThemeProvider>
+          </DataProvider>
         </AuthProvider>
       </body>
     </html>

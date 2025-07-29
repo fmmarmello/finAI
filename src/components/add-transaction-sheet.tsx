@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 import { Transaction } from "@/types";
 import { runCategorizeTransaction } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
-import { useCategories } from "@/hooks/use-categories";
+import { useData } from "@/contexts/data-context";
 import { defaultCategories } from "@/lib/categories";
 import { Switch } from "./ui/switch";
 
@@ -70,7 +70,7 @@ type AddTransactionSheetProps = {
 export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, onUpdateTransaction, transactionToEdit }: AddTransactionSheetProps) {
   const [isCategorizing, setIsCategorizing] = useState(false);
   const { toast } = useToast();
-  const { categories } = useCategories();
+  const { categories } = useData();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),

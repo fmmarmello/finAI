@@ -17,11 +17,11 @@ import { type AnalyzeSpendingOutput } from "@/ai/flows/analyze-spending";
 import { runAnalyzeSpending, runExtractTransactionData } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { type ExtractTransactionDataOutput } from "@/ai/flows/extract-transaction-data";
-import { useTransactions } from "@/hooks/use-transactions";
+import { useData } from "@/contexts/data-context";
 
 export function Dashboard() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const { transactions, loading, addTransaction, updateTransaction, markTransactionAsPaid } = useTransactions();
+  const { transactions, loading, addTransaction, updateTransaction, markTransactionAsPaid } = useData();
   const [insights, setInsights] = useState<AnalyzeSpendingOutput | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(true);
   const [isExtracting, setIsExtracting] = useState(false);

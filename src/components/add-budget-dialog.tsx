@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Budget } from "@/types";
-import { useCategories } from "@/hooks/use-categories";
+import { useData } from "@/contexts/data-context";
 
 const formSchema = z.object({
   category: z.string().min(1, { message: "A categoria é obrigatória." }),
@@ -55,7 +55,7 @@ export function AddBudgetDialog({
   budgetToEdit,
   existingCategories,
 }: AddBudgetDialogProps) {
-  const { categories: userCategories } = useCategories();
+  const { categories: userCategories } = useData();
   const expenseCategories = userCategories.filter(c => c !== 'Salário');
 
   const form = useForm<z.infer<typeof formSchema>>({

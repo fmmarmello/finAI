@@ -12,11 +12,11 @@ import { AddTransactionSheet } from "./add-transaction-sheet";
 import { Transaction } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { useTransactions } from "@/hooks/use-transactions";
+import { useData } from "@/contexts/data-context";
 
 export function TransactionsPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const { transactions, loading, addTransaction, updateTransaction, markTransactionAsPaid } = useTransactions();
+  const { transactions, loading, addTransaction, updateTransaction, markTransactionAsPaid } = useData();
   const [transactionToEdit, setTransactionToEdit] = useState<Transaction | null>(null);
   const { toast } = useToast();
   

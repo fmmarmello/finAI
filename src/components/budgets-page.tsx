@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -21,8 +22,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useBudgets } from "@/hooks/use-budgets";
-import { useTransactions } from "@/hooks/use-transactions";
+import { useData } from "@/contexts/data-context";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("pt-BR", {
@@ -98,8 +98,7 @@ function BudgetCard({ budget, transactions, onEdit, onDelete }: { budget: Budget
 
 export function BudgetsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { budgets, loading: budgetsLoading, addBudget, updateBudget, deleteBudget } = useBudgets();
-  const { transactions, loading: transactionsLoading } = useTransactions();
+  const { budgets, transactions, loading, addBudget, updateBudget, deleteBudget } = useData();
   const [budgetToEdit, setBudgetToEdit] = useState<Budget | null>(null);
   const { toast } = useToast();
 
@@ -145,7 +144,6 @@ export function BudgetsPage() {
   };
 
   const existingCategories = useMemo(() => budgets.map(b => b.category), [budgets]);
-  const isLoading = budgetsLoading || transactionsLoading;
 
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8 lg:p-6 xl:p-8">
@@ -159,7 +157,7 @@ export function BudgetsPage() {
         </div>
       </div>
 
-      {isLoading ? (
+      {loading ? (
         <div className="flex h-64 w-full items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
