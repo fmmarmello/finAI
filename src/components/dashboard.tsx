@@ -247,7 +247,7 @@ export function Dashboard() {
               className="hidden"
               accept="image/*,application/pdf"
             />
-          <Button size="sm" variant="outline" onClick={() => fileInputr_ef.current?.click()} disabled={isExtracting}>
+          <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isExtracting}>
             {isExtracting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
