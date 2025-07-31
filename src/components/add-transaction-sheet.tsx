@@ -43,7 +43,6 @@ import { Transaction } from "@/types";
 import { runCategorizeTransaction } from "@/lib/actions";
 import { useToast } from "@/hooks/use-toast";
 import { useData } from "@/contexts/data-context";
-import { defaultCategories } from "@/lib/categories";
 import { Switch } from "./ui/switch";
 
 const formSchema = z.object({
@@ -62,7 +61,7 @@ const formSchema = z.object({
 type AddTransactionSheetProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onAddTransaction: (transaction: Omit<Transaction, "id" | "source" | "status" | "ai_confidence_score">) => void;
+  onAddTransaction: (transaction: Omit<Transaction, "id" | "source" | "status">) => void;
   onUpdateTransaction: (transaction: Transaction) => void;
   transactionToEdit: Transaction | null;
 };
@@ -108,20 +107,12 @@ export function AddTransactionSheet({ isOpen, onOpenChange, onAddTransaction, on
 
 
   async function handleDescriptionBlur(description: string) {
-    if (description.length < 3 || transactionToEdit) return; // Do not categorize on edit
+    if (description.length < 3 || transactionToEdit || !categories.length) return;
     setIsCategorizing(true);
     try {
-      const result = await runCategorizeTransaction(description);
+      const result = await runCategorizeTransaction(description, categories);
       if (result.data) {
-        // Match against user's categories (case-insensitive)
-        const categoryMatch = categories.find(c => c.toLowerCase() === result.data.category.toLowerCase());
-        if (categoryMatch) {
-          form.setValue("category", categoryMatch);
-        } else {
-          // If no match in user's list, but it's a default one, use it. Otherwise, "Outros".
-          const defaultMatch = defaultCategories.find(c => c.toLowerCase() === result.data.category.toLowerCase());
-          form.setValue("category", defaultMatch || "Outros");
-        }
+        form.setValue("category", result.data.category);
       }
     } catch(e) {
       toast({

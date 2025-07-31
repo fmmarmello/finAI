@@ -1,14 +1,18 @@
 'use server';
 
 import { analyzeSpending, AnalyzeSpendingInput } from "@/ai/flows/analyze-spending";
-import { categorizeTransaction } from "@/ai/flows/categorize-transaction";
+import { categorizeTransaction, CategorizeTransactionInput } from "@/ai/flows/categorize-transaction";
 import { conversationalChat, ConversationalChatInput } from "@/ai/flows/conversational-chat";
 import { extractTransactionData } from "@/ai/flows/extract-transaction-data";
 import { Transaction } from "@/types";
 
-export async function runCategorizeTransaction(description: string) {
+export async function runCategorizeTransaction(description: string, userCategories: string[]) {
+  const input: CategorizeTransactionInput = {
+    description,
+    userCategories,
+  };
   try {
-    const result = await categorizeTransaction({ description });
+    const result = await categorizeTransaction(input);
     return { data: result };
   } catch (error) {
     console.error(error);

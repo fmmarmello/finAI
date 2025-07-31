@@ -12,8 +12,22 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+// List of possible categories to guide the AI.
+const CATEGORIES = [
+  "Alimentação",
+  "Transporte",
+  "Assinaturas & Serviços",
+  "Moradia",
+  "Lazer",
+  "Saúde",
+  "Compras",
+  "Salário",
+  "Outros",
+];
+
 const CategorizeTransactionInputSchema = z.object({
   description: z.string().describe('The description of the transaction.'),
+  userCategories: z.array(z.string()).describe('A list of categories defined by the user to select from.'),
 });
 export type CategorizeTransactionInput = z.infer<
   typeof CategorizeTransactionInputSchema
@@ -23,12 +37,7 @@ const CategorizeTransactionOutputSchema = z.object({
   category: z
     .string()
     .describe(
-      'The predicted category of the transaction (e.g., Food, Transportation, Entertainment).'
-    ),
-  confidenceScore: z
-    .number()
-    .describe(
-      'A score between 0 and 1 indicating the confidence level of the categorization.'
+      'The predicted category for the transaction, chosen from the user-provided list.'
     ),
 });
 export type CategorizeTransactionOutput = z.infer<
@@ -47,21 +56,17 @@ const categorizeTransactionPrompt = ai.definePrompt({
   output: {schema: CategorizeTransactionOutputSchema},
   prompt: `You are a financial expert specializing in categorizing transactions.
 
-  Given the transaction description, you will determine the most appropriate category and provide a confidence score.
+  Your task is to select the most appropriate category for the given transaction description from the list of available categories.
 
-  Transaction Description: {{{description}}}
+  Transaction Description:
+  "{{{description}}}"
+
+  Available Categories:
+  {{#each userCategories}}
+  - {{this}}
+  {{/each}}
   
-  Consider these categories:
-  - Food
-  - Transportation
-  - Entertainment
-  - Shopping
-  - Bills
-  - Salary
-  - Subscriptions
-  - Other
-  
-  Make a determination as to the best category, and provide a confidence score.
+  Please select the single best category from the list above.
   `,
 });
 
