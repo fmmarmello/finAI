@@ -1,5 +1,6 @@
+
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,13 +10,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ClipboardPen, Pencil, PlusCircle, Trash2 } from "lucide-react";
+import { ClipboardPen, Pencil, PlusCircle, Trash2, Wallet } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ExpenseTemplate } from "@/types";
 import { ExpenseTemplateDialog } from "./expense-template-dialog";
 import { DeleteTemplateAlert } from "./delete-template-alert";
 import { useData } from "@/contexts/data-context";
+import { format, getMonth, getYear } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Input } from "./ui/input";
 
 export function PlanningPage() {
   const { templates, loading, addTemplate, updateTemplate, deleteTemplate } = useData();
@@ -60,6 +64,11 @@ export function PlanningPage() {
     setIsAlertOpen(false);
     setTemplateToDelete(null);
   };
+
+  const currentMonthName = useMemo(() => {
+    const now = new Date();
+    return format(now, "MMMM", { locale: ptBR });
+  }, []);
 
 
   return (
@@ -140,15 +149,45 @@ export function PlanningPage() {
             </div>
           </CardContent>
         </Card>
-        {/* Placeholder for monthly expense list */}
+        
         <Card>
           <CardHeader>
-             <CardTitle>Despesas de Junho</CardTitle>
-             <CardDescription>Preencha os valores para as despesas deste mês.</CardDescription>
+             <CardTitle className="capitalize">Despesas de {currentMonthName}</CardTitle>
+             <CardDescription>Preencha os valores para as despesas deste mês. Em breve, você poderá salvar essas despesas como transações.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-center h-24 border-2 border-dashed rounded-lg">
-                <p className="text-muted-foreground">Em breve...</p>
+            <div className="space-y-4">
+               {loading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                </div>
+              ) : (
+                <ul className="space-y-3">
+                  {templates.length > 0 ? templates.map((template) => (
+                    <li key={template.id} className="flex flex-wrap items-center justify-between gap-4 rounded-lg border p-3">
+                        <div className="flex items-center gap-4">
+                            <Wallet className="size-6 text-muted-foreground" />
+                            <div>
+                                <p className="font-medium">{template.name}</p>
+                                <p className="text-sm text-muted-foreground">{template.category}</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 ml-auto">
+                            <Input 
+                                type="number" 
+                                placeholder="R$ 0,00" 
+                                className="w-32"
+                                disabled // Will be enabled in a future step
+                            />
+                            <Button disabled>Salvar</Button> 
+                        </div>
+                    </li>
+                  )) : (
+                    <p className="text-center text-muted-foreground py-8">Crie modelos de despesa para começar a planejar o seu mês.</p>
+                  )}
+                </ul>
+              )}
             </div>
           </CardContent>
         </Card>
