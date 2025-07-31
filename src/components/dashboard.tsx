@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { PlusCircle, Upload, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isEqual, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -40,6 +40,8 @@ export function Dashboard() {
     });
   }, [transactions, displayDate, loading]);
 
+  const stableToast = useCallback(toast, []);
+
   useEffect(() => {
     async function analyze() {
       if (loading) return; // Wait for transactions to load
@@ -51,14 +53,14 @@ export function Dashboard() {
           if (result.data) {
             setInsights(result.data);
           } else {
-             toast({
+             stableToast({
               variant: "destructive",
               title: "Erro na Análise",
               description: result.error,
             });
           }
         } catch(e) {
-           toast({
+           stableToast({
               variant: "destructive",
               title: "Erro na Análise",
               description: "Não foi possível gerar os insights.",
@@ -72,7 +74,7 @@ export function Dashboard() {
       }
     }
     analyze();
-  }, [transactionsForMonth, loading, toast]);
+  }, [transactionsForMonth, loading, stableToast]);
   
   useEffect(() => {
     if (!isSheetOpen) {
@@ -245,7 +247,7 @@ export function Dashboard() {
               className="hidden"
               accept="image/*,application/pdf"
             />
-          <Button size="sm" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isExtracting}>
+          <Button size="sm" variant="outline" onClick={() => fileInputr_ef.current?.click()} disabled={isExtracting}>
             {isExtracting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
